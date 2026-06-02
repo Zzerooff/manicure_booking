@@ -1,0 +1,15 @@
+.venv/
+venv/
+
+.idea/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+.env
+.env-non-dev
+
+pip

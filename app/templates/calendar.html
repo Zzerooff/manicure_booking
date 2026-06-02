@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Онлайн-запись на маникюр</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        /* Стилизация скроллбара для слотов времени */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm border-b border-slate-100 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-pink-600 flex items-center gap-2">
+                💅 <span>Маникюр Натали</span>
+            </h1>
+            <div id="auth-status">
+                {% if current_user.is_authenticated %}
+                    <span class="text-sm text-emerald-600 font-medium flex items-center gap-1">
+                        🟢 Вы авторизованы
+                    </span>
+                {% else %}
+                    <button id="btn-header-login" class="text-sm bg-pink-50 hover:bg-pink-100 text-pink-600 font-medium px-4 py-2 rounded-full transition cursor-pointer">
+                        Войти для записи
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8 flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <div class="md:col-span-1 flex flex-col gap-6">
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
+                <h2 class="text-lg font-semibold mb-4 text-slate-900">1. Выберите услугу</h2>
+                    <div class="flex flex-col gap-2">
+                        {% for wish in wish_list %}
+                        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-pink-300 hover:bg-pink-50/30 cursor-pointer transition group">
+                            <input type="radio" name="service" value="{{ wish.id }}" data-name="{{ wish.name }}" class="w-4 h-4 text-pink-600 focus:ring-pink-500 border-slate-300">
+                            <span class="text-xl">{{ wish.icon }}</span>
+                            <span class="font-medium text-slate-700 group-hover:text-slate-900 transition">
+                                {{ wish.name }}
+                            </span>
+                        </label>
+                        {% else %}
+                        <p class="text-sm text-slate-400 py-2">Услуги временно недоступны</p>
+                        {% endfor %}
+                    </div>
+            </div>
+
+            <div id="summary-card" class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 sticky top-24 hidden flex-col gap-4">
+                <h2 class="text-lg font-semibold text-slate-900">Итоговые данные</h2>
+                <div class="text-sm flex flex-col gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="text-slate-600">Услуга: <span id="summary-service" class="font-semibold text-slate-900">-</span></p>
+                    <p class="text-slate-600">Дата: <span id="summary-date" class="font-semibold text-slate-900">-</span></p>
+                    <p class="text-slate-600">Время: <span id="summary-time" class="font-semibold text-slate-900">-</span></p>
+                </div>
+                <button id="btn-submit" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold py-3 rounded-xl transition shadow-sm hover:shadow active:scale-[0.98]">
+                    Подтвердить запись
+                </button>
+            </div>
+        </div>
+
+        <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex flex-col gap-6">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900">2. Выберите дату и время</h2>
+                <p class="text-sm text-slate-500 mt-1">Доступные дни подсвечены зеленым цветом</p>
+            </div>
+
+            <div class="grid grid-cols-7 gap-2 text-center font-medium text-sm text-slate-400 mb-2">
+                <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+            </div>
+
+            <div class="grid grid-cols-7 gap-2">
+                {% if start_day_offset > 0 %}
+                    {% for _ in range(start_day_offset) %}
+                        <div class="aspect-square"></div>
+                    {% endfor %}
+                {% endif %}
+
+                {% for day in calendar_days %}
+                    {% if day.is_available and day.available_slots %}
+                        <button
+                            class="day-btn aspect-square flex flex-col items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold hover:bg-emerald-100 hover:border-emerald-300 transition cursor-pointer relative"
+                            data-date="{{ day.date }}"
+                            data-slots='{{ day.available_slots | tojson }}'>
+                            <span class="text-base">{{ day.date.day }}</span>
+                            <span class="text-[10px] opacity-70 font-normal">слоты</span>
+                        </button>
+                    {% else %}
+                        <div class="aspect-square flex items-center justify-center rounded-xl bg-slate-100/70 border border-slate-200/50 text-slate-400 cursor-not-allowed">
+                            {{ day.date.day }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div id="slots-section" class="hidden border-t border-slate-100 pt-6 mt-4">
+                <h3 class="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                    ⏰ Свободное время на <span id="selected-date-label" class="text-pink-600"></span>
+                </h3>
+                <div id="slots-container" class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                    </div>
+            </div>
+        </div>
+        <div id="auth-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 hidden animate-fade-in">
+    <div class="bg-white p-6 rounded-2xl shadow-xl border border-slate-100 w-full max-w-sm mx-4 relative">
+        <button id="close-modal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg">✕</button>
+
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Вход в аккаунт</h3>
+        <p class="text-sm text-slate-500 mb-4">Авторизуйтесь, чтобы завершить бронирование</p>
+
+        <form id="modal-login-form" class="flex flex-col gap-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Email</label>
+                <input type="email" id="modal-email" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-pink-500 text-sm" placeholder="example@mail.com">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Пароль</label>
+                <input type="password" id="modal-password" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-pink-500 text-sm" placeholder="••••••••">
+            </div>
+            <div id="modal-auth-error" class="text-xs text-rose-600 font-medium hidden"></div>
+            <button type="submit" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2.5 rounded-xl transition mt-2">
+                Войти и записаться
+            </button>
+        </form>
+    </div>
+</div>
+    </main>
+
+    <script>
+        // Получаем статус авторизации из Jinja2 во фронтенд
+        const isAuthenticated = {{ current_user.is_authenticated | tojson }};
+
+        // Глобальное состояние выбора пользователя
+        let bookingState = {
+            serviceId: null,
+            serviceName: null,
+            date: null,
+            time: null
+        };
+
+        // DOM элементы
+        const dayButtons = document.querySelectorAll('.day-btn');
+        const slotsSection = document.getElementById('slots-section');
+        const selectedDateLabel = document.getElementById('selected-date-label');
+        const slotsContainer = document.getElementById('slots-container');
+        const summaryCard = document.getElementById('summary-card');
+
+        const summaryService = document.getElementById('summary-service');
+        const summaryDate = document.getElementById('summary-date');
+        const summaryTime = document.getElementById('summary-time');
+        const btnSubmit = document.getElementById('btn-submit');
+
+        // Модальное окно
+        const authModal = document.getElementById('auth-modal');
+        const closeModal = document.getElementById('close-modal');
+        const modalLoginForm = document.getElementById('modal-login-form');
+        const modalAuthError = document.getElementById('modal-auth-error');
+
+        // Новая переменная для кнопки из шапки
+        const btnHeaderLogin = document.getElementById('btn-header-login');
+
+        // ==========================================
+        // Вспомогательные функции
+        // ==========================================
+
+        // Красивое форматирование даты (YYYY-MM-DD -> DD.MM.YYYY)
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
+
+        // Функция обновления боковой панели итога
+        function updateSummary() {
+            if (bookingState.serviceName || bookingState.date || bookingState.time) {
+                summaryCard.classList.remove('hidden');
+                summaryCard.classList.add('flex');
+            }
+
+            summaryService.textContent = bookingState.serviceName || '-';
+            summaryDate.textContent = bookingState.date ? formatDate(bookingState.date) : '-';
+            summaryTime.textContent = bookingState.time || '-';
+
+            // Активируем кнопку отправки только если выбрано абсолютно всё
+            if (bookingState.serviceId && bookingState.date && bookingState.time) {
+                btnSubmit.disabled = false;
+                btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                btnSubmit.disabled = true;
+                btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Функция отрисовки доступных слотов времени
+        function renderSlots(slots) {
+            slotsContainer.innerHTML = '';
+            slotsSection.classList.remove('hidden');
+
+            if (!slots || slots.length === 0) {
+                slotsContainer.innerHTML = '<p class="text-sm text-slate-400 col-span-full">Нет свободных слотов</p>';
+                return;
+            }
+
+            slots.forEach(slot => {
+                const timeBtn = document.createElement('button');
+                timeBtn.className = 'time-btn py-2 px-3 text-sm font-medium rounded-lg border border-slate-200 text-slate-700 hover:border-pink-500 hover:text-pink-600 hover:bg-pink-50/50 transition cursor-pointer text-center';
+                timeBtn.textContent = slot.trim();
+
+                timeBtn.addEventListener('click', () => {
+                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('bg-pink-600', 'text-white', 'border-pink-600', 'hover:bg-pink-600', 'hover:text-white'));
+                    timeBtn.classList.add('bg-pink-600', 'text-white', 'border-pink-600', 'hover:bg-pink-600', 'hover:text-white');
+
+                    bookingState.time = slot.trim();
+                    updateSummary();
+                });
+
+                slotsContainer.appendChild(timeBtn);
+            });
+        }
+
+        // Функция отправки брони на бэкенд
+        async function sendBookingRequest() {
+            const url = `/bookings?date=${bookingState.date}&time_slot=${bookingState.time}&wish_list=${bookingState.serviceId}`;
+            try {
+                const response = await fetch(url, { method: 'POST' });
+                if (response.ok) {
+                    alert('Вы успешно записались!');
+                    window.location.reload();
+                } else {
+                    const errData = await response.json();
+                    alert(`Ошибка: ${errData.detail || 'Не удалось создать запись'}`);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Произошла сетевая ошибка при попытке записи.');
+            }
+        }
+
+        // ==========================================
+        // Обработчики событий (Слушатели)
+        // ==========================================
+
+        // Закрытие модалки
+        closeModal.addEventListener('click', () => {
+            authModal.classList.add('hidden');
+            modalAuthError.classList.add('hidden');
+        });
+
+        // 1. Выбор услуги (Радио-кнопки)
+        document.querySelectorAll('input[name="service"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                bookingState.serviceId = e.target.value;
+                bookingState.serviceName = e.target.dataset.name;
+                updateSummary();
+            });
+        });
+
+        // 2. Клик по дням календаря
+        dayButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                dayButtons.forEach(b => b.classList.remove('ring-2', 'ring-pink-500', 'bg-emerald-100'));
+                btn.classList.add('ring-2', 'ring-pink-500', 'bg-emerald-100');
+
+                bookingState.date = btn.dataset.date;
+                bookingState.time = null;
+
+                const slots = JSON.parse(btn.dataset.slots);
+                selectedDateLabel.textContent = formatDate(bookingState.date);
+                renderSlots(slots);
+                updateSummary();
+            });
+        });
+
+        // 3. Главная кнопка "Подтвердить запись"
+        btnSubmit.addEventListener('click', async () => {
+            // Проверяем авторизацию по новому пути
+            const authCheck = await fetch('/auth/me');
+
+            if (authCheck.ok) {
+                // Если сессия активна (200 OK) — сразу шлем бронь
+                await sendBookingRequest();
+            } else {
+                // Если не авторизован (401) — открываем поп-ап, сохраняя все галочки на экране
+                authModal.classList.remove('hidden');
+            }
+        });
+
+        // 4. Форма авторизации внутри модального окна
+        modalLoginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            modalAuthError.classList.add('hidden');
+
+            const email = document.getElementById('modal-email').value;
+            const password = document.getElementById('modal-password').value;
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    authModal.classList.add('hidden');
+
+                    // Меняем индикатор в шапке на "Авторизован"
+                    document.getElementById('auth-status').innerHTML = `
+                        <span class="text-sm text-emerald-600 font-medium flex items-center gap-1">
+                            🟢 Вы авторизованы
+                        </span>
+                    `;
+
+                    // Сразу же отправляем припасенные параметры брони
+                    await sendBookingRequest();
+                } else {
+                    modalAuthError.textContent = 'Неверный email или пароль';
+                    modalAuthError.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error(error);
+                modalAuthError.textContent = 'Ошибка соединения с сервером.';
+                modalAuthError.classList.remove('hidden');
+            }
+        });
+
+        // Проверка при первой загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSummary();
+        });
+
+        // Открытие модалки при клике на кнопку "Войти для записи" в шапке
+        if (btnHeaderLogin) {
+            btnHeaderLogin.addEventListener('click', () => {
+                authModal.classList.remove('hidden');
+            });
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "name": "Анна Иванова",
+    "username": "anna_i",
+    "email": "anna@example.com",
+    "phone": "+79001234567",
+    "password_hash": "$2b$12$Qqu5FTNiOhAA8RhTXDHPJObSimxd3F6TTZcG13AhiGB7qpUA5Mjva",
+    "is_active": true,
+    "is_admin": true,
+    "created_at": "2024-01-10T10:00:00Z",
+    "updated_at": "2024-01-10T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "name": "Мария Петрова",
+    "username": "maria_p",
+    "email": "maria@example.com",
+    "phone": "+79007654321",
+    "password_hash": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPv6x3pXz5LDi",
+    "is_active": true,
+    "is_admin": false,
+    "created_at": "2024-01-15T11:20:00Z",
+    "updated_at": "2024-01-15T11:20:00Z"
+  },
+  {
+    "id": 3,
+    "name": "Елена Смирнова",
+    "username": "elena_s",
+    "email": "elena@example.com",
+    "phone": "+79008887777",
+    "password_hash": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPv6x3pXz5LDi",
+    "is_active": true,
+    "is_admin": false,
+    "created_at": "2024-01-20T09:15:00Z",
+    "updated_at": "2024-01-20T09:15:00Z"
+  },
+  {
+    "id": 4,
+    "name": "Ольга Кузнецова",
+    "username": "olga_k",
+    "email": "olga@example.com",
+    "phone": "+79009998888",
+    "password_hash": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPv6x3pXz5LDi",
+    "is_active": true,
+    "is_admin": false,
+    "created_at": "2024-01-22T14:30:00Z",
+    "updated_at": "2024-01-22T14:30:00Z"
+  },
+  {
+    "id": 5,
+    "name": "Татьяна Волкова",
+    "username": "tatiana_v",
+    "email": "tatiana@example.com",
+    "phone": "+79005556666",
+    "password_hash": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPv6x3pXz5LDi",
+    "is_active": true,
+    "is_admin": false,
+    "created_at": "2024-02-01T16:45:00Z",
+    "updated_at": "2024-02-01T16:45:00Z"
+  }
+]
