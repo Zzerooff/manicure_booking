@@ -16,14 +16,17 @@
 1. Клонируйте репозиторий
 ```bash
     git clone https://github.com/Zzerooff/manicure_booking.git
-    cd manicure_natali
+    cd manicure_booking
 ```
-
-2. Запустите проект
+2. Подготовьте окружение
+```bash
+    ./setup_project.sh
+```
+3. Запустите проект
 ```bash
     docker-compose up --build
 ```
-3. Проверьте работу. Перейдите в документацию Swagger
+4. Проверьте работу. Перейдите в документацию Swagger
 ```bash
    http://localhost:8000/docs
 ```
