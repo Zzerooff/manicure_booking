@@ -1,53 +1,59 @@
-version: '3.7'
 services:
-  manicure_natali:
-    image: manicure_natali
-    volumes:
-      - .:/manicure_natali
+  web:
     build:
       context: .
+    volumes:
+      - .:/app
     ports:
       - "8000:8000"
-    command: ['/manicure_natali/docker/app.sh']
     env_file:
-      - .env-non-dev
+      - .env
+      - .env.example
+    command: ["./docker/app.sh"]
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
-  db: # this name in .env-non-dev
-    image: postgres:15
-    container_name: manicure_postgres
+  db:
+    image: postgres:15-alpine
     env_file:
-      - .env-non-dev
+      - .env.example
     ports:
-      - 5432:5432
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-manicure_app}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
 
   redis:
-    image: redis:7
-    container_name: manicure_redis
+    image: redis:7-alpine
     ports:
-      - 6379:6379
+      - "6379:6379"
 
   celery:
-    image: manicure_natali
     build: .
-    container_name: manicure_celery
     env_file:
-      - .env-non-dev
-    command: ['/manicure_natali/docker/celery.sh', 'celery']
+      - .env
+      - .env.example
+    command: ["./docker/celery.sh", "celery"]
     depends_on:
       - redis
 
   flower:
-    image: manicure_natali
     build: .
-    container_name: manicure_flower
     ports:
-      - 5555:5555
+      - "5555:5555"
     env_file:
-      - .env-non-dev
-    command: ['/manicure_natali/docker/celery.sh', 'flower']
+      - .env
+      - .env.example
+    command: ["./docker/celery.sh", "flower"]
     depends_on:
       - redis
 
+volumes:
+  postgres_data:

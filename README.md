@@ -11,32 +11,56 @@
 * **Валидация данных:** Pydantic v2
 * **Линтеры/Форматтеры:** Ruff
 
+## 🚀 Быстрый старт
+
+1. Клонируйте репозиторий
+```bash
+    git clone https://github.com/Zzerooff/manicure_booking.git
+    cd manicure_natali
+```
+
+2. Запустите проект
+```bash
+    docker-compose up --build
+```
+3. Проверьте работу. Перейдите в документацию Swagger
+```bash
+   http://localhost:8000/docs
+```
+Далее выполните /register -> /login -> /pages/calendar
+
 ## 💻 Локальный запуск
 
 1. Создайте и активируйте виртуальное окружение:
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+    python -m venv .venv
+    source .venv/bin/activate
+```
+или для Windows:
+
+```bash
+    python -m venv .venv
+    .venv\Scripts\activate
 ```
 
 2. Установите зависимости: 
 ```bash
-pip install -r requirements.txt
+    pip install -r requirements.txt
 ```
 
 3. Примените миграции Alembic: 
 ```bash
-alembic upgrade head
+    alembic upgrade head
 ```
 
 4. Запустите сервер: 
 ```bash
-uvicorn app.main:app --reload
+    uvicorn app.main:app --reload
 ```
 
 ## 🧪 Тестирование 
 ```bash
-pytest -s -vv
+    pytest -s -vv
 ```
 
 * **Async-first:** Приложение полностью написано с использованием асинхронного подхода (FastAPI + `asyncpg` + асинкт-сессии SQLAlchemy).

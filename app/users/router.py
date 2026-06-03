@@ -17,7 +17,7 @@ router = APIRouter(
 )
 
 
-@router.post("/register")
+@router.post("/register", description="Регистрирует нового пользователя")
 async def register(user_date: SUserAuth):
     try:
         existing_user = await UserDAO().find_one_or_none(email=user_date.email)

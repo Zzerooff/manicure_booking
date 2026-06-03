@@ -1,7 +1,7 @@
 # app/calendar/models.py
 from pydantic import ConfigDict
-from sqlalchemy import Boolean, Column, Date, DateTime, Integer, String
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Boolean, Column, Date, DateTime, Integer, Time
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -16,16 +16,14 @@ class Calendar(Base):
     id = Column(Integer, primary_key=True, index=True)
     date = Column(Date, nullable=False, unique=True, index=True)  # Дата
     is_available = Column(Boolean, default=True)  # Доступен ли день
-    working_hours_start = Column(
-        String, nullable=False, default="10:00"
-    )  # Начало работы
-    working_hours_end = Column(String, nullable=False, default="20:00")  # Конец работы
-    break_start = Column(String, nullable=True, default="14:00")  # Начало перерыва
-    break_end = Column(String, nullable=True, default="15:00")  # Конец перерыва
+    working_hours_start = Column(Time, nullable=False)
+    working_hours_end = Column(Time, nullable=False)
+    break_start = Column(Time, nullable=True)
+    break_end = Column(Time, nullable=True)
     slot_duration = Column(
         Integer, default=150
     )  # Длительность слота в минутах (2.5 часа = 150 минут)
-    available_slots = Column(JSONB, default=list)  # Доступные временные слоты
+    available_slots = Column(ARRAY(Time), nullable=False)
     max_bookings_per_day = Column(
         Integer, default=4
     )  # Максимум записей в день (при 2.5ч интервале при 10-20ч = 4 слота)

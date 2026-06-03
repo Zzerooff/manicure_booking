@@ -9,6 +9,8 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    Date,
+    Time,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -35,8 +37,8 @@ class Booking(Base):
     wish_list = Column(
         JSON, nullable=True
     )  # Список услуг: [{"id": 1, "name": "Маникюр", "price": 1000}, ...]
-    booking_date = Column(String, nullable=True)  # Дата брони
-    booking_time = Column(String, nullable=True)  # Время брони
+    booking_date = Column(Date, nullable=True)  # Дата брони
+    booking_time = Column(Time, nullable=True)  # Время брони
     total_price = Column(Float, nullable=True)  # Общая цена
     duration = Column(Integer, nullable=True)  # Общая длительность в минутах
 

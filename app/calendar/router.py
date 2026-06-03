@@ -10,14 +10,16 @@ router = APIRouter(
 )
 
 
-@router.get("")
-# @cache(expire=30)
+@router.get("", description="Возвращает все даты из базы данных")
 async def get_calendar() -> list[SCalendar]:
     result = await CalendarDAO.find_all()
     return list(result)
 
 
-@router.post("")
+@router.post(
+    "",
+    description="Заполняет календарь слотами в диапазоне дат, даты не должны быть уже зарегистрированы",
+)
 async def fill_date_calendar(
     date_start: str,
     date_end: str,

@@ -4,7 +4,6 @@ from typing import Any, Dict, Sequence
 from app.calendar.models import Calendar
 from app.wishes.models import Wish
 
-import inspect
 from typing import Optional
 
 
@@ -13,56 +12,29 @@ async def generate_calendar_context(
     wish_list: Sequence[Wish],
     current_user: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    if db_calendar_days:
-        start_day_offset = db_calendar_days[0].date.weekday()
-    else:
-        start_day_offset = 0
+    start_day_offset = db_calendar_days[0].date.weekday() if db_calendar_days else 0
 
-    cleaned_days = []
-    for day in db_calendar_days:
-        # СВЕРХБЕЗОПАСНОЕ извлечение слотов:
-        raw_slots = day.available_slots
-
-        # Если SQLAlchemy вернула корутину вместо данных, мы её "ожидаем"
-        if inspect.iscoroutine(raw_slots) or inspect.isawaitable(raw_slots):
-            slots = await raw_slots
-        else:
-            slots = list(raw_slots)
-
-        # Если после этого получилась строка (иногда JSON сохраняется как строка), парсим её
-        if isinstance(slots, str):
-            import json
-
-            try:
-                slots = json.loads(slots)
-            except Exception:
-                slots = []
-
-        # Гарантируем, что на выходе чистый список
-        if not isinstance(slots, list):
-            slots = list(slots) if slots else []
-
-        cleaned_days.append(
-            {
-                "date": day.date,
-                "is_available": bool(day.is_available),
-                "available_slots": slots,
-            }
-        )
-
-    cleaned_wishes = []
-    for wish in wish_list:
-        cleaned_wishes.append(
-            {"id": wish.id, "name": wish.name_ru, "icon": getattr(wish, "icon", "💼")}
-        )
+    cleaned_days = [
+        {
+            "date": day.date,
+            "is_available": bool(day.is_available),
+            "available_slots": [
+                t.strftime("%H:%M") for t in (day.available_slots or [])
+            ],
+        }
+        for day in db_calendar_days
+    ]
 
     return {
         "current_user": {
-            "is_authenticated": current_user.is_authenticated if current_user else False
+            "is_authenticated": getattr(current_user, "is_authenticated", False)
         },
         "start_day_offset": start_day_offset,
         "calendar_days": cleaned_days,
-        "wish_list": cleaned_wishes,
+        "wish_list": [
+            {"id": w.id, "name": w.name_ru, "icon": getattr(w, "icon", "💼")}
+            for w in wish_list
+        ],
     }
 
 

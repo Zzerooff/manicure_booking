@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, time
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
@@ -15,15 +15,19 @@ router = APIRouter(
 )
 
 
-@router.get("")
+@router.get("", description="Возвращает все брони текущего пользователя")
 async def get_my_bookings(user: User = Depends(get_current_user)) -> list[SBooking]:
     return list(await BookingDAO.find_all(user_id=user.id))
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    description="Бронирует слот записи текущего пользователя",
+)
 async def create_booking(
     date: date = Query(..., description="Дата слота формата YYYY-MM-DD"),
-    time_slot: str = Query(..., description="Время слота например 10:00"),
+    time_slot: time = Query(..., description="Время слота например 10:00"),
     wish_list: list[int] = Query(..., description="Перечисление услуг 1,2,3"),
     user: User = Depends(get_current_user),
 ) -> dict[str, Any]:

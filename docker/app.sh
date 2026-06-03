@@ -1,31 +1,35 @@
 #!/bin/bash
 
-# Функция для ожидания доступности порта базы данных через Python
 wait_for_db() {
-  echo "Waiting for postgres..."
+  local db_host="${DB_HOST:-db}"
+  local db_port="${DB_PORT:-5432}"
+
+  echo "Waiting for postgres at $db_host:$db_port..."
   python -c "
 import socket
 import time
+import os
+
+host = os.getenv('DB_HOST', 'db')
+port = int(os.getenv('DB_PORT', 5432))
 
 while True:
     try:
-        # Проверяем порт контейнера manicure_postgres
-        with socket.create_connection(('manicure_postgres', 5432), timeout=1):
+        with socket.create_connection((host, port), timeout=1):
             break
     except OSError:
-        time.sleep(0.2)
+        time.sleep(0.5)
 "
   echo "PostgreSQL started!"
 }
 
-# 1. Железно дожидаемся базу данных
 wait_for_db
 
-# 2. Запускаем наполнение базы
-echo "Запуск скрипта наполнения базы данных..."
-python /manicure_natali/fill_db.py
+echo "Применение миграций Alembic..."
+alembic upgrade head
 
-# 3. Запускаем сервер в зависимости от режима
+echo "Запуск скрипта наполнения базы данных..."
+python fill_db.py
 if [ "$MODE" == "DEV" ]; then
     echo "Running in DEVELOPMENT mode"
     uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

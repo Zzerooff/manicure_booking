@@ -2,10 +2,8 @@ import asyncio
 from datetime import datetime, timedelta
 
 from sqlalchemy import text
-from app.database import engine, Base  # Импортируем Base (убедись, что путь правильный)
+from app.database import engine, Base
 from app.users.auth import get_password_hash
-
-# Импортируем модели, чтобы Алхимия "увидела" их перед созданием таблиц
 
 
 async def fill_db():
@@ -15,22 +13,24 @@ async def fill_db():
         await conn.run_sync(Base.metadata.create_all)
     print("Таблицы готовы.")
 
-    # 2. Проверяем суммарное количество строк во ВСЕХ пользовательских таблицах
+    # 2. Проверяем, есть ли данные конкретно в таблице услуг (wishes)
     async with engine.connect() as conn:
-        check_all_tables_query = """
-            SELECT COALESCE(SUM(n_live_tup), 0) 
-            FROM pg_stat_user_tables;
-        """
-        result = await conn.execute(text(check_all_tables_query))
-        total_rows = result.scalar()
+        # Проверяем именно таблицу wishes, игнорируя служебные таблицы Alembic
+        check_wishes_query = "SELECT COUNT(*) FROM wishes;"
+        try:
+            result = await conn.execute(text(check_wishes_query))
+            wishes_count = result.scalar()
+        except Exception:
+            # Если таблицы wishes еще нет (мало ли), считаем, что данных нет
+            wishes_count = 0
 
-        if total_rows > 0:
+        if wishes_count > 0:
             print(
-                f"База данных уже содержит данные ({total_rows} строк суммарно). Пропускаю автозаполнение."
+                f"База данных уже содержит услуги ({wishes_count} записей). Пропускаю автозаполнение."
             )
             return
 
-    print("База абсолютно пуста. Начинаю генерацию дат и загрузку данных...")
+    print("База не содержит услуг. Начинаю генерацию дат и загрузку данных...")
 
     valid_hash = get_password_hash("123456")
 
@@ -71,11 +71,11 @@ async def fill_db():
     -- 3. Вставка календаря (Добавлена f-строка!)
     INSERT INTO calendar (date, is_available, working_hours_start, working_hours_end, break_start, break_end, slot_duration, available_slots, max_bookings_per_day, created_at, updated_at)
     VALUES 
-        ('{date_0}', true, '10:00:00', '20:00:00', '13:00:00', '14:00:00', 150, '["10:00", "12:30", "15:00", "17:30"]', 4, NOW(), NOW()),
-        ('{date_1}', true, '10:00:00', '20:00:00', '13:00:00', '14:00:00', 150, '["10:00", "12:30", "15:00", "17:30"]', 4, NOW(), NOW()),
-        ('{date_2}', true, '10:00:00', '20:00:00', NULL, NULL, 150, '["10:00", "12:30", "15:00", "17:30"]', 4, NOW(), NOW()),
-        ('{date_3}', false, '10:00:00', '20:00:00', NULL, NULL, 150, '[]', 0, NOW(), NOW()),
-        ('{date_4}', true, '10:00:00', '18:00:00', NULL, NULL, 150, '["10:00", "12:30", "15:00"]', 3, NOW(), NOW())
+        ('{date_0}', true, '10:00:00', '20:00:00', '13:00:00', '14:00:00', 150, ARRAY['10:00:00', '12:30:00', '15:00:00', '17:30:00']::TIME[], 4, NOW(), NOW()),
+        ('{date_1}', true, '10:00:00', '20:00:00', '13:00:00', '14:00:00', 150, ARRAY['10:00:00', '12:30:00', '15:00:00', '17:30:00']::TIME[], 4, NOW(), NOW()),
+        ('{date_2}', true, '10:00:00', '20:00:00', NULL, NULL, 150, ARRAY['10:00:00', '12:30:00', '15:00:00', '17:30:00']::TIME[], 4, NOW(), NOW()),
+        ('{date_3}', false, '10:00:00', '20:00:00', NULL, NULL, 150, ARRAY[]::TIME[], 0, NOW(), NOW()),
+        ('{date_4}', true, '10:00:00', '18:00:00', NULL, NULL, 150, ARRAY['10:00:00', '12:30:00', '15:00:00']::TIME[], 3, NOW(), NOW())
     ON CONFLICT (date) DO NOTHING;
     """,
         f"""

@@ -8,7 +8,7 @@ from app.calendar.router import get_calendar
 from app.database import get_db
 from app.users.dependencies import get_current_user_optional
 
-from sqlalchemy import select  # Обязательно добавьте этот импорт в начало файла!
+from sqlalchemy import select
 
 from app.calendar.models import Calendar
 from app.calendar.calendar_service import generate_calendar_context

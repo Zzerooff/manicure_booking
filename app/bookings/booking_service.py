@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, time
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -20,13 +20,15 @@ class BookingService:
 
     @classmethod
     async def create_new_booking(
-        cls, date: date, time_slot: str, wish_list: list[int], user: User
+        cls, date: date, time_slot: time, wish_list: list[int], user: User
     ):
         async with async_session_maker() as session:
             async with session.begin():
-                formatted_date = date.strftime("%Y-%m-%d")
+                calendar = await CalendarDAO.get_by_date(session, date)
 
-                calendar = await CalendarDAO.find_one_or_none(date=date)
+                if not calendar or time_slot not in calendar.available_slots:
+                    raise SlotCantBeBooking()
+
                 cls._validate_calendar_time_slot(calendar, time_slot)
 
                 try:
@@ -35,7 +37,7 @@ class BookingService:
                     new_booking_object = Booking(
                         user_id=user.id,
                         calendar_id=calendar.id,
-                        booking_date=formatted_date,
+                        booking_date=date,
                         booking_time=time_slot,
                         wish_list=wish_list,
                         total_price=total_price,
@@ -57,7 +59,7 @@ class BookingService:
                         msg="Database error while adding booking",
                         extra={
                             "user_id": user.id,
-                            "date": formatted_date,
+                            "date": date,
                             "time_slot": time_slot,
                         },
                         exc_info=True,
@@ -69,7 +71,7 @@ class BookingService:
                         msg="Unexpected error in create booking logic:",
                         extra={
                             "user_id": user.id,
-                            "date": formatted_date,
+                            "date": date,
                             "time_slot": time_slot,
                         },
                         exc_info=True,
@@ -77,12 +79,10 @@ class BookingService:
                     raise e
 
     @staticmethod
-    def _validate_calendar_time_slot(calendar: Calendar, time_slot: str) -> None:
+    def _validate_calendar_time_slot(calendar: Calendar, time_slot: time) -> None:
         """Проверяет существование дня и наличие свободного слота в нем"""
 
-        if not calendar or time_slot.strip() not in [
-            str(s).strip() for s in calendar.available_slots
-        ]:
+        if not calendar or time_slot not in calendar.available_slots:
             raise SlotCantBeBooking()
 
     @staticmethod

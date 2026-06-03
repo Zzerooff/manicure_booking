@@ -1,5 +1,4 @@
-from datetime import date, datetime
-from typing import List
+from datetime import date, datetime, time
 
 from pydantic import BaseModel, Field
 
@@ -8,14 +7,15 @@ class SCalendar(BaseModel):
     id: int
     date: date
     is_available: bool = Field(default=True)
-    working_hours_start: str
-    working_hours_end: str
-    break_start: str | None = None
-    break_end: str | None = None
+    working_hours_start: time
+    working_hours_end: time
+    break_start: time | None = None
+    break_end: time | None = None
     slot_duration: int = Field(default=150, description="Длительность слота в минутах")
-    available_slots: List[str] = Field(
-        default_factory=list, description="Доступные временные слоты"
-    )
+    available_slots: list[time]
     max_bookings_per_day: int = Field(default=4)
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
