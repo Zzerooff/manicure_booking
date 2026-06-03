@@ -20,7 +20,7 @@
 ```
 2. Подготовьте окружение
 ```bash
-    ./setup_project.sh
+    .\setup_project.sh
 ```
 3. Запустите проект
 ```bash
